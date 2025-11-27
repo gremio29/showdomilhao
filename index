@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Show do Milhão</title>
+
+<style>
+/* ==== CONFIGURAÇÕES GERAIS ==== */
+body {
+    font-family: 'Poppins', sans-serif;
+    background: url('https://blog.aguiabranca.com.br/wp-content/uploads/2025/03/Cristo_Redentor_-_Rio_de_Janeiro_-_20230321170956-960x580.jpg') no-repeat center center fixed; /* coloque a URL da imagem aqui */
+    background-size: cover;
+    color: white;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+/* ==== RANKING LATERAL ==== */
+#ranking {
+    width: px;
+    background: rgba(0, 0, 0, 0.6);
+    border-right: 2px solid gold;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+#ranking h2 {
+    color: gold;
+}
+
+#rankingList {
+    list-style: none;
+    padding: 0;
+    width: 100%;
+}
+
+#rankingList li {
+    background: rgba(255, 255, 255, 0.1);
+    margin: 4px 0;
+    padding: 6px;
+    border-radius: 5px;
+}
+
+/* ==== ÁREA PRINCIPAL DO JOGO ==== */
+#main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    text-align: center;
+}
+
+/* ==== CONTÊINER DE PERGUNTAS ==== */
+#questionBox {
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid gold;
+    border-radius: 15px;
+    padding: 20px;
+    width: 80%;
+    max-width: 600px;
+    margin-bottom: 20px;
+}
+
+#question {
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+}
+
+/* ==== OPÇÕES DE RESPOSTA ==== */
+#answers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.answer-btn {
+    background: rgba(0, 0, 80, 0.8);
+    border: 2px solid #0044ff;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.answer-btn:hover {
+    background: rgba(0, 0, 150, 0.9);
+}
+
+/* Correto / Errado */
+.correct {
+    background: green !important;
+}
+
+.incorrect {
+    background: red !important;
+}
+
+/* ==== BOTÕES DE AJUDA ==== */
+#lifelines {
+    background: yellow;
+    display: flex;
+    justify-content: space-around;
+    width: 80%;
+    max-width: 600px;
+    padding: 10px;
+    border-radius: 10px;
+    margin: 10px 0;
+}
+
+#lifelines button {
+    background: black;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 30%;
+}
+
+#lifelines button:disabled {
+    background: gray;
+    color: #ccc;
+}
+
+/* ==== BOTÃO RESET ==== */
+#resetBtn {
+    position: fixed;
+    top: 10px;
+    left: 30%;
+    transform: translateX(-50%) translateY(0); /* Centraliza horizontalmente e depois desloca */
+    background: red;
+    border: none;
+    padding: 10px 15px;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    z-index: 999; /* Aumenta o z-index para que o botão fique acima de outros elementos */
+    margin-left: -50px; /* Desloca 50px para a esquerda */
+}
+
+/* ==== FAIXA LATERAL (TORRE) ==== */
+#tower-container {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 50px;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-left: 2px solid gold;
+    z-index: 10;
+    overflow-y: auto;
+}
+
+#tower {
+    width: 100%;
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+.level {
+    border: 2px solid #fff;
+    padding: 5px 10px;
+    width: 120px;
+    margin: 3px 0;
+    border-radius: 5px;
+}
+
+.active-level {
+    background-color: gold;
+    color: black;
+    font-weight: bold;
+}
+
+/* ==== TELAS ==== */
+#startScreen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    left: 20px;
+    z-index: 3;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Estilo para destacar a resposta correta quando "Placas" é usado */
+.correct-answer {
+    background-color: gold !important;
+    color: black;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+    <div id="ranking">
+        <h2>🏆 Ranking 🏆</h2>
+        <ul id="rankingList"></ul>
+    </div>
+
+    <div id="main">
+        <button id="resetBtn">RESET</button>
+
+        <div id="startScreen">
+            <h1>💰 Show do Milhão 💰</h1>
+            <button id="startBtn">Iniciar Jogo</button>
+        </div>
+
+        <div id="game" class="hidden">
+            <div id="questionBox">
+                <h2 id="question"></h2>
+                <div id="answers"></div>
+            </div>
+
+            <div id="lifelines">
+                <button id="skip">Pular</button>
+                <button id="half">50%</button>
+                <button id="audience">Placas</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Faixa lateral para a torre -->
+    <div id="tower-container">
+        <div id="tower"></div>
+    </div>
+
+<script>
+/* ==========================
+   LÓGICA DO JOGO
+   ========================== */
+
+const questions = [
+    {q:"Qual é o estado conhecido, principalmente, pelo seu café?", options:["Rio de Janeiro","Minas Gerais","Espirito Santo","São Paulo"], answer:1},
+    {q:"Qual estado já foi apelidada de 'A selva de concreto'?", options:["Rio de Janeiro","Paraná","Goias","São Paulo"], answer:3},
+    {q:"Qual desses pratos é um alimento típico de São Paulo?", options:["Arroz de biro-biro","Filé de jacaré","Cambira","Tacacá"], answer:0},
+    {q:"O prato 'Vaca Atolada' é um alimento típico de qual estado?", options:["Rio de Janeiro","Minas Gerais","Santa Catarina","Espírito Santo"], answer:1},
+    {q:"A Festa da Penha é uma tradição cultural e religiosa que ocorrem em qual estado?", options:["Espírito Santo","São Paulo","Paraná","Amapá"], answer:0},
+ 
+    {q:"Qual estado possui a maior metropole da América Latina?", options:["São Paulo","Rio Grande do Sul","Ceará","Minas Gerais"], answer:0},
+    {q:"A região Sudeste do Brasil é caracterizado por qual tipo de relevo?", options:["Planaltos e Cerras","Planaltos e Depressões","Planicies e Vales","Vales e Montanhas"], answer:0},
+    {q:"Apartir da chegada dos europeus ao Brasil, atualmente, onde estaria localizado o primeiro local em que se estabeleceu a colônia portuguesa?", options:["Liberdade","São Vicente","Petrópolis","Sorocaba"], answer:1},
+    {q:"No estado/cidade de São Paulo ocorreu um evento cultural chamado 'Semana da Arte Moderna'. Em qual ano isso ocorreu?", options:["2016","1888","1922","1896"], answer:2},
+    {q:"De acordo com o IBGE (de 2025) o estado de Minas Gerais possui aproximadamente quantos abitantes?", options:["31.7 milhões","18.2 milhões","80.9 mil","21.4 milhões"], answer:3},
+ 
+    {q:"Na crônica 'Conversa com São Pedro' de Machado de Assis, a lenda do tesouro dos jesuítas aponta que o proprio tesouro estaria enterrado em qual região do Rio de Janeiro?", options:["Morro do Alemão","Rocinha","Morro do Castelo","Morro da Urca"], answer:2},
+    {q:"A lenda do Opala Preto é um história do folclore urbano. Essa lenda é principalemente conhecida nos estados de: ", options:["Paraná e Goias","Rio de Janeiro e São Paulo","São Paulo e Minas Gerais","Rio de Janeiro e Santa Catarina"], answer:1},
+    {q:"Qual dessas locações foi a principal moradia da princesa Isabel no Rio de Janeiro antes do exílio da família imperial?", options:["Palácio Guanabara","Palácio Isabel","Palácio de São Cristóvão","Palacio Imperial de Petropoles"], answer:0},
+    {q:"Alberto Santos Dumont, o criador do primeiro avião monomotor conhecido como 14-Bis, nasceu em qual local de Minas Gerais? ", options:["Congonhas","Fazenda Cabangu","Diamantina","São Lourenço"], answer:1},
+    {q:"Em qual ano o Rio de Janeiro sediou os Jogos Olímpicos de Verão?", options:["1997","2023","1982","2016"], answer:3},
+ 
+    {q:"Em Julho de 2013 o Rio de Janeiro recebeu a especial visita do Papa Francisco. Ao total, quantos dias o Papa Francisco permaneceu no estado?", options:["6 dias","7 dias","8 dias","9 dias"], answer:1},
+    {q:"O grito 'Independência ou Morte!' dito por Dom Pedro I às margens do rio Ipiranga em São Paulo ocorreu em qual data?", options:["15/11/1889","21/04/1792","07/09/1822","25/12/1788"], answer:2},
+    {q:"Qual é o material mineral com maior extração em Minas Gerais?", options:["Zinco","Ferro","Cobre","Alumínio"], answer:1},
+    {q:"A Casa da Moeda do Brasil (CMB) fica no complexo industria de Santa Cruz, que fica no estado de:", options:["São Paulo","Rio de Janeiro","Santa Catarina","Paraná"], answer:1},
+    {q:"A primeira unidade do Batalhão de Operações Especiais (BOPE) surgiu no dia 19 de Janeiro de 1978 no Rio de Janeiro com qual intuito?", options:["Subtração populacional de milicianos","Responder a assaltos a banco e sequestros","Caça e coleta de recompensas a criminosos","Bloqueio e contenção de multidões"], answer:1},
+ 
+    {q:"Em 1789 ocorreu um movimento separatista conhecido como 'Inconfidência Mineira' em Minas Gerais contra os altos impostos de Portugal. Um importante menbro desse movimento foi executado 21 de Abril de 1792. Quem foi?", options:["Tomás Antônio","Joaquim José","Cláudio Manuel","Luís Vieira"], answer:1},
+    {q:"O primeiro astronauta brasileiro, Marcos Pontes, nasceu na cidade de Bauru em São Paulo e sua primeira viagem espacial ocorreu em 30 de março de 2006. Qual é o nome da missão que o astronalta participou?", options:["Missão Centenária","TMA-8","R.E.P.B","Artemis"], answer:0},
+    {q:"A banda de Groove Metal e Death Metal conhecida como 'Sepultura' surgiu em Minas Gerais na cidade de Belo Horizonte no ano de 1984. Criada pelos irmão Max e Igor Cavalera, a banda estreou com seu albúm:", options:["Thousand Suns","Deathcrush","Morbid Visions","Load"], answer:2},
+    {q:"O estudio original da Herbert Richers, famoso pela icônica frase 'Versão brasileira Herbert Richers', foi construindo em qual rua de qual estado?", options:["Avenida Paulista - São Paulo","Avenida Afonso Pena - Minas Gerais","Rua do Lazer - Espírito Santo","Rua Conde de Bonfim - Rio de Janeiro"], answer:3},
+    {q:"O desenvolvedor de jogos eletrônicos, como a franquia Metal Gear, Hideo Kojima participol do Brasil Game Show (BGS) de 2025, em Sâo Paulo, com a função de: ", options:["Vendedor de produtos das suas franquias","Celebridade indiferente","Jurado do concurso de cosplays","Organizador principal do evento"], answer:2}
+];
+
+let currentQuestion = 0;
+let score = 0;
+let usedSkip = false, usedHalf = false, usedAudience = false;
+let ranking = JSON.parse(localStorage.getItem("ranking")) || [];
+
+const startBtn = document.getElementById("startBtn");
+const startScreen = document.getElementById("startScreen");
+const game = document.getElementById("game");
+const questionEl = document.getElementById("question");
+const answersEl = document.getElementById("answers");
+const skipBtn = document.getElementById("skip");
+const halfBtn = document.getElementById("half");
+const audienceBtn = document.getElementById("audience");
+const towerEl = document.getElementById("tower");
+const rankingList = document.getElementById("rankingList");
+const resetBtn = document.getElementById("resetBtn");
+
+/* ==== Atualiza ranking lateral ==== */
+function updateRanking() {
+    rankingList.innerHTML = ranking
+        .sort((a,b)=>b.score-a.score)
+        .map(r => `<li>${r.name} - ${r.score} pts</li>`)
+        .join('');
+}
+
+/* ==== Atualiza torre ==== */
+function updateTower() {
+    towerEl.innerHTML = "";
+    for (let i = 0; i < questions.length; i++) {
+        const div = document.createElement("div");
+        div.classList.add("level");
+        if (i === currentQuestion) div.classList.add("active-level");
+        div.textContent = `Nível ${i + 1}`;
+        towerEl.appendChild(div);
+    }
+}
+
+/* ==== Exibe a pergunta atual ==== */
+function showQuestion() {
+    const q = questions[currentQuestion];
+    questionEl.textContent = q.q;
+    answersEl.innerHTML = "";
+    q.options.forEach((opt, i) => {
+        const btn = document.createElement("button");
+        btn.textContent = opt;
+        btn.className = "answer-btn";
+        btn.onclick = () => checkAnswer(i, btn);
+        answersEl.appendChild(btn);
+    });
+    updateTower();
+}
+
+/* ==== Verifica resposta ==== */
+function checkAnswer(choice, button) {
+    const correctIndex = questions[currentQuestion].answer;
+    const buttons = document.querySelectorAll(".answer-btn");
+
+    buttons.forEach(btn => btn.disabled = true);
+
+    if (choice === correctIndex) {
+        button.classList.add("correct");
+        score++;
+        setTimeout(() => nextQuestion(), 800);
+    } else {
+        button.classList.add("incorrect");
+        buttons[correctIndex].classList.add("correct");
+        setTimeout(() => gameOver(false), 1200);
+    }
+}
+
+/* ==== Próxima pergunta ==== */
+function nextQuestion() {
+    currentQuestion++;
+    if (currentQuestion < questions.length) showQuestion();
+    else gameOver(true);
+}
+
+/* ==== Fim de jogo ==== */
+function gameOver(win) {
+    const name = prompt(win ? "🎉 Parabéns! Seu nome:" : "😢 Você perdeu. Digite seu nome:");
+    if (name) {
+        ranking.push({ name, score });
+        localStorage.setItem("ranking", JSON.stringify(ranking));
+        updateRanking();
+    }
+    resetToMenu();
+}
+
+/* ==== Botão RESET (não apaga ranking) ==== */
+resetBtn.onclick = () => {
+    if (confirm("Voltar ao menu inicial?")) resetToMenu();
+};
+
+function resetToMenu() {
+    startScreen.classList.remove("hidden");
+    game.classList.add("hidden");
+    currentQuestion = 0;
+    score = 0;
+    usedSkip = usedHalf = usedAudience = false;
+    skipBtn.disabled = halfBtn.disabled = audienceBtn.disabled = false;
+}
+
+/* ==== Botões de ajuda ==== */
+skipBtn.onclick = () => {
+    if (usedSkip) return;
+    usedSkip = true;
+    skipBtn.disabled = true;
+    nextQuestion();
+};
+
+halfBtn.onclick = () => {
+    if (usedHalf) return;
+    usedHalf = true;
+    halfBtn.disabled = true;
+    const q = questions[currentQuestion];
+    const wrongs = [0, 1, 2, 3].filter(i => i !== q.answer);
+    wrongs.sort(() => Math.random() - 0.5);
+    wrongs.slice(0, 2).forEach(i => {
+        answersEl.children[i].style.visibility = "hidden";
+    });
+};
+
+/* ==== Botão 'Placas' (Ajuda) ==== */
+audienceBtn.onclick = () => {
+    if (usedAudience) return;
+    usedAudience = true;
+    audienceBtn.disabled = true;
+   
+    const correctIndex = questions[currentQuestion].answer;
+    const answerButtons = document.querySelectorAll(".answer-btn");
+
+    // Destaca a resposta correta
+    answerButtons[correctIndex].classList.add("correct-answer");
+
+    alert("📊 O público votou majoritariamente em:");
+};
+
+/* ==== Iniciar jogo ==== */
+startBtn.onclick = () => {
+    startScreen.classList.add("hidden");
+    game.classList.remove("hidden");
+    showQuestion();
+};
+
+updateRanking();
+</script>
+</body>
+</html>
